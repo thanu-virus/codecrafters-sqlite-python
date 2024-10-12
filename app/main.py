@@ -1,6 +1,6 @@
 import sys
 from dataclasses import dataclass
-# import sqlparse - available if you need it!
+import sqlparse
 from .record_parser import parse_record
 from .varint_parser import parse_varint
 database_file_path = sys.argv[1]
@@ -24,8 +24,7 @@ class PageHeader:
         instance.start_of_content_area = int.from_bytes(database_file.read(2), "big")
         instance.fragmented_free_bytes = int.from_bytes(database_file.read(1), "big")
         return instance
-
-if command == ".dbinfo" or ".tables":
+def getMeta():
     with open(database_file_path, "rb") as database_file:
         database_file.seek(100)  # Skip the header section
         page_header = PageHeader.parse_from(database_file)
@@ -53,11 +52,10 @@ if command == ".dbinfo" or ".tables":
                     "sql": record[4],
                 }
             )
-        if command == ".dbinfo":
-            print(f"number of tables: {len(sqlite_schema_rows)}")
-        elif command == ".tables":
-            for table in sqlite_schema_rows:
-                print(table["tbl_name"].decode("utf-8"), end=" ")
-            print()
+    return sqlite_schema_rows
+if command == ".dbinfo":
+    print(f"number of tables: {len(getMeta())}")
+elif command == ".tables":
+    print(" ".join([n["name"].decode("utf-8") for n in getMeta()]))
 else:
     print(f"Invalid command: {command}")
